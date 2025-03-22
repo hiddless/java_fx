@@ -1,15 +1,34 @@
 module com.hiddless.java_fx {
+
     requires javafx.controls;
+
+
     requires javafx.fxml;
-    requires javafx.web;
+
 
     requires org.controlsfx.controls;
+
+
     requires com.dlsc.formsfx;
+
+
     requires net.synedra.validatorfx;
+
     requires org.kordamp.ikonli.javafx;
+
+
     requires org.kordamp.bootstrapfx.core;
-    requires eu.hansolo.tilesfx;
+
+    requires static lombok;
+
+    requires java.sql;
 
     opens com.hiddless.java_fx to javafx.fxml;
+    opens com.hiddless.java_fx.dto to javafx.base, lombok;
+    opens com.hiddless.java_fx.dao to java.sql;
+    opens com.hiddless.java_fx.database to java.sql;
+
     exports com.hiddless.java_fx;
+    exports com.hiddless.java_fx.database;
+    exports com.hiddless.java_fx.dao;
 }
