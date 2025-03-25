@@ -209,7 +209,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                com.hamitmizrak.ibb_ecodation_javafx/com.hamitmizrak.ibb_ecodation_javafx.HelloApplication
+                                com/hiddless/java_fx/HelloApplication.java
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>

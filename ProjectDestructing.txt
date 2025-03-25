@@ -1,10 +1,10 @@
 src/
-├── com.hiddless.java_fx.dao/
+├── com/hiddless/java_fx/dao/
 │   ├── UserDAO.java
 │   ├── DBConnection.java
-├── com.hiddless.java_fx.dto/
+├── com/hiddless/java_fx/dto/
 │   ├── UserDTO.java
-├── com.
+├── com/hiddless/java_fx/controller/
 │   ├── LoginController.java
 │   ├── RegisterController.java
 ├── view/
