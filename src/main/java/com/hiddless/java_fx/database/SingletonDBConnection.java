@@ -6,96 +6,84 @@ import java.sql.*;
 
 public class SingletonDBConnection {
 
-    // Field
-    // Database  Information Data
     private static final String URL = "jdbc:h2:./h2db/user_management";
-    //private static final String URL = "jdbc:h2:./h2db/user_management?" + "AUTO_SERVER=TRUE";
-    //private static final String URL = "jdbc:h2:~/h2db/user_management"; //kök dizin
     private static final String USERNAME = "sa";
     private static final String PASSWORD = "";
 
-    // Singleton Design pattern
     private static SingletonDBConnection instance;
-    private  Connection connection;
+    private Connection connection;
 
-    // Parametresiz Constructor (private ile dışarıdan erişilemez olmasını sağlamak)
     private SingletonDBConnection() {
         try {
-            // JDBC Yükle
             Class.forName("org.h2.Driver");
-            // Bağlantı oluşturmak
-            this.connection= DriverManager.getConnection(URL, USERNAME,PASSWORD);
-            System.out.println(SpecialColor.GREEN + "Veritabanı bağlantısı başarılı" + SpecialColor.RESET);
+            this.connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            System.out.println(SpecialColor.GREEN + "Database connection successful" + SpecialColor.RESET);
         } catch (Exception exception) {
             exception.printStackTrace();
-            System.out.println(SpecialColor.RED + "Veritabanı bağlantısı başarısız" + SpecialColor.RESET);
-            throw new RuntimeException("Veritabanı bağlantısı başarısız");
+            System.out.println(SpecialColor.RED + "Database connection failed" + SpecialColor.RESET);
+            throw new RuntimeException("Database connection failed");
         }
     }
 
-    // Singleton Design Intance
-    public static synchronized SingletonDBConnection getInstance(){
-        if(instance==null){
-            instance= new SingletonDBConnection();
+    public static synchronized SingletonDBConnection getInstance() {
+        if (instance == null) {
+            instance = new SingletonDBConnection();
         }
         return instance;
     }
 
-    // Bağlantı nesnesi çağırma
     public Connection getConnection() {
         return connection;
     }
-
-    // Database Kapatmak
-    public static void closeConnection(){
-        if(instance!=null && instance.connection!=null){
+    public static void closeConnection() {
+        if (instance != null && instance.connection != null) {
             try {
                 instance.connection.close();
-                System.out.println(SpecialColor.RED+ "Veritabanı bağlantısı kapatıldı");
+                System.out.println(SpecialColor.RED + "Database connection closed" + SpecialColor.RESET);
             } catch (SQLException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Failed to close database connection", e);
             }
         }
     }
+    public static void dataSet() throws SQLException {
 
-    // Database Test
-    public static void dataSet()  throws SQLException{
-        // Singleton Instance ile Bağlantıyı Al
         SingletonDBConnection dbInstance = SingletonDBConnection.getInstance();
         Connection conn = dbInstance.getConnection();
 
-        Statement stmt = conn.createStatement();
+        try (Statement stmt = conn.createStatement()) {
 
-        // Örnek bir tablo oluştur
-        String createTableSQL = "CREATE TABLE IF NOT EXISTS Users ("
-                + "id INT AUTO_INCREMENT PRIMARY KEY, "
-                + "name VARCHAR(255), "
-                + "email VARCHAR(255))";
-        stmt.execute(createTableSQL);
-        System.out.println("Users tablosu oluşturuldu!");
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS Users ("
+                    + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                    + "name VARCHAR(255), "
+                    + "email VARCHAR(255))";
+            stmt.execute(createTableSQL);
+            System.out.println("Users table created!");
 
-        // Veri Ekleme
-        String insertDataSQL = "INSERT INTO Users (name, email) VALUES "
-                + "('Ali Veli', 'ali@example.com'), "
-                + "('Ayşe Fatma', 'ayse@example.com')";
-        stmt.executeUpdate(insertDataSQL);
-        System.out.println("Veriler eklendi!");
+            String insertDataSQL = "INSERT INTO Users (name, email) VALUES "
+                    + "('Thomas William', 'thomas@example.com'), "
+                    + "('Sophie', 'sophie@example.com')";
+            stmt.executeUpdate(insertDataSQL);
+            System.out.println("Data inserted!");
 
-        // Veri Okuma
-        String selectSQL = "SELECT * FROM Users";
-        ResultSet rs = stmt.executeQuery(selectSQL);
+            String selectSQL = "SELECT * FROM Users";
+            try (ResultSet rs = stmt.executeQuery(selectSQL)) {
 
-        System.out.println("\nUsers Tablosu İçeriği:");
-        while (rs.next()) {
-            System.out.println("ID: " + rs.getInt("id") +
-                    ", Name: " + rs.getString("name") +
-                    ", Email: " + rs.getString("email"));
+                System.out.println("\nUsers Table Contents:");
+                while (rs.next()) {
+                    System.out.println("ID: " + rs.getInt("id") +
+                            ", Name: " + rs.getString("name") +
+                            ", Email: " + rs.getString("email"));
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error executing database operations: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            SingletonDBConnection.closeConnection();
         }
+    }
 
-        // Bağlantıyı Kapat
-        SingletonDBConnection.closeConnection();
-    }
     public static void main(String[] args) throws SQLException {
-        //dataSet();
+        dataSet();
     }
-} // end class
+}

@@ -1,26 +1,15 @@
 package com.hiddless.java_fx.iofiles;
 
+import java.io.IOException;
+
 public interface IFileHandlerInterface {
 
-    /**
-     * 📌 Dosya yoksa oluştur, varsa aç.
-     */
-    void createFileIfNotExists();
+    void createFileIfNotExists() throws IOException;
 
-    /**
-     * 📌 Dosyaya veri yazma metodu.
-     * @param data Yazılacak veri.
-     */
-    void writeFile(String data);
+    void writeFile(String data) throws IOException;
 
-    /**
-     * 📌 Dosyadan veri okuma metodu.
-     */
-    void readFile();
+    void readFile() throws IOException;
 
-    /**
-     * 📌 Loglama işlemi için varsayılan metot.
-     */
     default void logInfo(String message) {
         System.out.println("ℹ️ " + message);
     }

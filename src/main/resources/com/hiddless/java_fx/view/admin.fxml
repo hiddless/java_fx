@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-        <?import javafx.scene.layout.AnchorPane?>
-        <?import javafx.scene.layout.VBox?>
-        <?import javafx.scene.control.TableView?>
-        <?import javafx.scene.control.TableColumn?>
-        <?import javafx.scene.layout.HBox?>
-        <?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+
 <AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.hiddless.java_fx.controller.AdminController">
     <children>
+        <VBox spacing="10" layoutX="10" layoutY="10" style="-fx-padding: 1;" stylesheets="@css/styles.css">
 
-        <VBox  spacing="10" layoutX="10" layoutY="10"
-               style="-fx-padding: 1;" stylesheets="@css/styles.css">
-
+            <!-- TableView for User Data -->
             <TableView fx:id="userTable">
                 <columns>
                     <TableColumn fx:id="idColumn" text="ID"/>
@@ -21,17 +21,18 @@
                 </columns>
             </TableView>
 
+            <!-- Action Buttons for User Operations -->
             <HBox spacing="10">
                 <Button text="Add User" onAction="#addUser" />
                 <Button text="Update User" onAction="#updateUser" />
                 <Button text="Delete User" onAction="#deleteUser" />
             </HBox>
 
+            <!-- Buttons for Table Refresh and Exit -->
             <HBox spacing="10">
-                <Button text="Refresh Table" onAction="#refleshTable" />
+                <Button text="Refresh Table" onAction="#refreshTable" />
                 <Button text="Exit" onAction="#logout" />
             </HBox>
-
         </VBox>
     </children>
 </AnchorPane>

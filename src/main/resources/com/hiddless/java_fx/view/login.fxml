@@ -13,18 +13,18 @@
         stylesheets="@css/styles.css">
 
     <Label
-            text="Kullanıcı Girişi"
+            text="User Login"
             style="-fx-font-size: 18px;"
     />
 
     <TextField
             fx:id="usernameField"
-            promptText="username"
+            promptText="Username"
     />
 
     <PasswordField
             fx:id="passwordField"
-            promptText="password"
+            promptText="Password"
             onKeyPressed="#specialOnEnterPressed"
     />
 
@@ -32,7 +32,6 @@
             text="Login"
             onAction="#login"
             style="-fx-background-color: #2F2F2F; -fx-text-fill: white;"
-
     />
 
     <Button

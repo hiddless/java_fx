@@ -136,3 +136,9 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE
 ) [42101-224]
+2025-03-26 11:28:44.511040+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM users WHERE username=?[*], AND password=?"; SQL statement:
+SELECT * FROM users WHERE username=?, AND password=? [42000-224]
+2025-03-26 11:33:50.352541+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM users WHERE username=?[*], AND password=?"; SQL statement:
+SELECT * FROM users WHERE username=?, AND password=? [42000-224]
