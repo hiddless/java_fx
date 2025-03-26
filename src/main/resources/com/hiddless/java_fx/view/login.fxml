@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- JavaFX FXML belgesi -->
-<!-- Ana kaplama düzeni olarak VBox kullanılıyor -->
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
 
-<!--
- JavaFX’te VBox, bir layout (yerleşim) yöneticisidir. Yani sahnedeki bileşenlerin (button, label, textfield vb.)
- nasıl konumlandırılacağını belirleyen bir konteynerdir.
- VBox özel olarak bileşenleri dikey (vertical) olarak yerleştirir.
- Her yeni bileşen, bir öncekinin altına gelecek şekilde sıralanır.
- -->
 <VBox
         xmlns="http://javafx.com/javafx/8"
         xmlns:fx="http://javafx.com/fxml/1"
@@ -20,40 +12,31 @@
         style="-fx-padding: 20;"
         stylesheets="@css/styles.css">
 
-    <!-- Uygulama başlığını göstermek için bir etiket -->
     <Label
             text="Kullanıcı Girişi"
             style="-fx-font-size: 18px;"
     />
 
-    <!-- Kullanıcı adını girmek için bir TextField -->
     <TextField
             fx:id="usernameField"
-            promptText="Kullanıcı Adı"
+            promptText="username"
     />
 
-    <!-- Şifreyi girmek için bir PasswordField -->
     <PasswordField
             fx:id="passwordField"
-            promptText="Şifre"
+            promptText="password"
             onKeyPressed="#specialOnEnterPressed"
     />
 
-    <!-- Giriş yapma işlemini tetiklemek için bir buton -->
-    <!--
-    inline css
-    style="-fx-background-color: #2F2F2F; -fx-text-fill: white;"
-    -->
     <Button
-            text="Giriş Yap"
+            text="Login"
             onAction="#login"
             style="-fx-background-color: #2F2F2F; -fx-text-fill: white;"
 
     />
 
-    <!-- Kayıt olma ekranına geçmek için bir buton -->
     <Button
-            text="Kayıt Ol"
+            text="Register"
             onAction="#switchToRegister"
     />
 </VBox>
