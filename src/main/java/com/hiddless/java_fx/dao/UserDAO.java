@@ -11,17 +11,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+// UserDAO
 public class UserDAO implements IDaoImplements<UserDTO> {
 
+    // Injection
     private Connection connection;
 
-
+    // Parametresiz Constructor
     public UserDAO() {
+        // Default Değerler
         this.connection = SingletonDBConnection.getInstance().getConnection();
     }
 
-    ///////////////////////////////////////////////////////////////////////
-
+    /// ////////////////////////////////////////////////////////////////////
+    // CRUD
+    // CREATE
     @Override
     public Optional<UserDTO> create(UserDTO userDTO) {
         String sql = "INSERT INTO users (username,password,email) VALUES(?,?,?)";
@@ -32,10 +36,11 @@ public class UserDAO implements IDaoImplements<UserDTO> {
             // CREATE, DELETE, UPDATE
             int affectedRows = preparedStatement.executeUpdate();
 
+            // Eğer Ekleme başarılıysa
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
-                        userDTO.setId(generatedKeys.getInt(1));
+                        userDTO.setId(generatedKeys.getInt(1)); // OTomatik ID set et
                         return Optional.of(userDTO);
                     }
                 } catch (SQLException sqlException) {
@@ -45,6 +50,7 @@ public class UserDAO implements IDaoImplements<UserDTO> {
         } catch (Exception exception) {
             exception.printStackTrace();
         }
+        // Eğer Ekleme başarısızsa boş veri dönder
         return Optional.empty();
     }
 
@@ -69,13 +75,14 @@ public class UserDAO implements IDaoImplements<UserDTO> {
         } catch (Exception exception) {
             exception.printStackTrace();
         }
-
+        // Eğer Listeleme başarısızsa boş veri dönder
         return Optional.empty();
     }
 
     // FIND BY NAME
     @Override
     public Optional<UserDTO> findByName(String name) {
+        //String sql = "SELECT * FROM users WHERE username=?";
         String sql = "SELECT * FROM users WHERE email=?";
         return selectSingle(sql, name);
     }
@@ -102,14 +109,16 @@ public class UserDAO implements IDaoImplements<UserDTO> {
                 // CREATE, DELETE, UPDATE
                 int affectedRows = preparedStatement.executeUpdate();
 
+                // Eğer Güncelleme başarılıysa
                 if (affectedRows > 0) {
-                    userDTO.setId(id);
+                    userDTO.setId(id); // Güncellenen userDTO için id'yi ekle
                     return Optional.of(userDTO);
                 }
             } catch (Exception exception) {
                 exception.printStackTrace();
             }
         }
+        // Eğer Güncellenecek id veri yoksa boş dönder.
         return Optional.empty();
     }
 
@@ -122,8 +131,10 @@ public class UserDAO implements IDaoImplements<UserDTO> {
             try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                 preparedStatement.setInt(1, id);
 
+                // CREATE, DELETE, UPDATE
                 int affectedRows = preparedStatement.executeUpdate();
 
+                // Eğer Güncelleme başarılıysa
                 if (affectedRows > 0) {
                     return optionalDelete;
                 }
@@ -131,10 +142,14 @@ public class UserDAO implements IDaoImplements<UserDTO> {
                 exception.printStackTrace();
             }
         }
+        // Eğer Silinecek id veri yoksa boş dönder.
         return Optional.empty();
     }
 
-    ///////////////////////////////////////////////////////////////////
+    /// ////////////////////////////////////////////////////////////////
+    // GENERICS METOTO (LIST,FIND)
+    // ResultSet'ten UserDTO oluşturmayı tek bir yardımcı metot
+    // ResultSetten UserDTO oluştur
     @Override
     public UserDTO mapToObjectDTO(ResultSet resultSet) throws SQLException {
         return UserDTO.builder()
@@ -145,6 +160,9 @@ public class UserDAO implements IDaoImplements<UserDTO> {
                 .build();
     }
 
+    // dizi elemanları(Değişkenler birden fazla olabilir)
+    // ID veya NAME ile veri çektiğimizde bu ortak metot kullanılır
+    // Generics ile Tek kayıt Döndüren Metot
     @Override
     public Optional<UserDTO> selectSingle(String sql, Object... params) {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -163,9 +181,11 @@ public class UserDAO implements IDaoImplements<UserDTO> {
         return Optional.empty();
     }
 
+    /// /////////////////////////////////////////////////////////////////////
+    /// LOGIN (ILogin interface)
     @Override
     public Optional loginUser(String username, String password) {
         String sql = "SELECT * FROM users WHERE username=?, AND password=?";
         return selectSingle(sql, username, password);
     }
-}
+} //end class

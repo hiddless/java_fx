@@ -14,37 +14,45 @@ public class SpecialFileHandler {
     private String filePath;
 
     public SpecialFileHandler() {
-        this.filePath = "default.txt";
+        this.filePath = "default.txt";  // Varsayılan dosya adı
     }
 
     public void createFileIfNotExists() {
         File file = new File(filePath);
         try {
             if (file.exists()) {
-                logger.info("File already exists: " + filePath);
+                //logger.info("✅ Dosya zaten mevcut: " + filePath);
+                System.out.println(SpecialColor.YELLOW+"✅ Dosya zaten mevcut: " + filePath+SpecialColor.RESET);
             } else {
                 if (file.createNewFile()) {
-                    System.out.println(SpecialColor.GREEN+"New file created: " + filePath+SpecialColor.RESET);
+                    //logger.info("📄 Yeni dosya oluşturuldu: " + filePath);
+                    System.out.println(SpecialColor.BLUE+"📄 Yeni dosya oluşturuldu: " + filePath+SpecialColor.RESET);
                 } else {
-                    logger.warning("Failed to create file: " + filePath);
+                    //logger.warning("⚠️ Dosya oluşturulamadı: " + filePath);
+                    System.out.println(SpecialColor.RED+"⚠️ Dosya oluşturulamadı: " + filePath+SpecialColor.RESET);
                 }
             }
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "File creation error: " + e.getMessage(), e);
+            //logger.log(Level.SEVERE, "❌ Dosya oluşturma hatası: " + e.getMessage(), e);
+            //
+            System.out.println(SpecialColor.RED+"⚠️ Dosya oluşturma hatası: " + filePath+SpecialColor.RESET);
         }
     }
 
     public void writeFile(String data) {
         if (data == null || data.trim().isEmpty()) {
-            logger.warning("Empty data cannot be written!");
+            logger.warning("⚠️ Boş veri yazılamaz!");
+            System.out.println(SpecialColor.RED+"⚠️ Boş veri yazılamaz! " + filePath+SpecialColor.RESET);
             return;
         }
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
             writer.write(data);
             writer.newLine();
-            logger.info(" Data successfully written to file: " + filePath);
+            //logger.info("✅ Veri başarıyla dosyaya yazıldı: " + filePath);
+            System.out.println(SpecialColor.BLUE+"✅ Veri başarıyla dosyaya yazıldı: " + filePath+SpecialColor.RESET);
         } catch (IOException e) {
-            logger.log(Level.SEVERE, " Error writing to file: " + e.getMessage(), e);
+            //logger.log(Level.SEVERE, "❌ Dosyaya yazma hatası: " + e.getMessage(), e);
+            System.out.println(SpecialColor.RED+"❌Dosyaya yazma hatası: " + filePath+SpecialColor.RESET);
         }
     }
 
@@ -53,24 +61,29 @@ public class SpecialFileHandler {
         List<String> fileLines = new ArrayList<>();
 
         if (!file.exists()) {
-            logger.warning("No file found to read: " + filePath);
+            //logger.warning("⚠️ Okunacak dosya bulunamadı: " + filePath);
+            System.out.println(SpecialColor.RED+"⚠️ Okunacak dosya bulunamadı: " + filePath+SpecialColor.RESET);
             return fileLines;
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
-            logger.info("Reading file content...");
+            //logger.info("📖 Dosya içeriği okunuyor...");
+            System.out.println(SpecialColor.BLUE+"📖 Dosya içeriği okunuyor... " +SpecialColor.RESET);
             while ((line = reader.readLine()) != null) {
                 fileLines.add(line);
             }
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "File reading error: " + e.getMessage(), e);
+            //logger.log(Level.SEVERE, "❌ Dosya okuma hatası: " + e.getMessage(), e);
+            System.out.println(SpecialColor.RED+"❌ Dosya okuma hatası " + filePath+SpecialColor.RESET);
         }
 
         if (fileLines.isEmpty()) {
-            logger.warning("The file is read but the content is empty.");
+            //logger.warning("⚠️ Dosya okunmasına rağmen içerik boş.");
+            System.out.println(SpecialColor.RED+"⚠️ Dosya okunmasına rağmen içerik boş." +SpecialColor.RESET);
         } else {
-            logger.info("From File " + fileLines.size() + " line read successfully.");
+            //logger.info("✅ Dosyadan " + fileLines.size() + " satır başarıyla okundu.");
+            System.out.println(SpecialColor.BLUE+"✅ Dosyadan " + fileLines.size() + " satır başarıyla okundu."+SpecialColor.RESET);
         }
 
         return fileLines;
@@ -83,7 +96,8 @@ public class SpecialFileHandler {
 
     public void setFilePath(String filePath) {
         if (filePath == null || filePath.trim().isEmpty()) {
-            logger.warning("Invalid file path! Setting default file name: default.txt");
+            //logger.warning("⚠️ Geçersiz dosya yolu! Varsayılan dosya adı atanıyor: default.txt");
+            System.out.println(SpecialColor.RED+"️ Geçersiz dosya yolu! Varsayılan dosya adı atanıyor: default.txt"+SpecialColor.RESET);
             this.filePath = "default.txt";
         } else {
             this.filePath = filePath;
