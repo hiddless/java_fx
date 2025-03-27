@@ -20,6 +20,7 @@ module com.hiddless.java_fx {
     requires java.sql;
     requires org.apache.poi.poi;
     requires java.desktop;
+    requires jbcrypt;
 
     opens com.hiddless.java_fx to javafx.fxml;
     opens com.hiddless.java_fx.dto to javafx.base, lombok;
@@ -30,4 +31,6 @@ module com.hiddless.java_fx {
     exports com.hiddless.java_fx;
     exports com.hiddless.java_fx.database;
     exports com.hiddless.java_fx.dao;
+
+    opens com.hiddless.java_fx.utils to javafx.base, lombok;
 }

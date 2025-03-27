@@ -24,7 +24,7 @@
             <!-- Action Buttons for User Operations -->
             <HBox spacing="10">
                 <Button text="Add User" onAction="#addUser" />
-                <Button text="Update User" onAction="#updateUser" />
+                <Button text="Update User" onAction="#updateUser"/>
                 <Button text="Delete User" onAction="#deleteUser" />
             </HBox>
 

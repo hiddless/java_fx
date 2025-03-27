@@ -83,7 +83,7 @@ public class AdminController {
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/hiddless/java_fx/view/Login.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/hiddless/java_fx/view/login.fxml "));
                 Parent root = loader.load();
                 Stage stage = (Stage) userTable.getScene().getWindow();
                 stage.setScene(new Scene(root));
@@ -141,6 +141,21 @@ public class AdminController {
             }
         } else {
             showAlert("Warning", "Please select a user to delete.", Alert.AlertType.WARNING);
+        }
+    }
+
+    @FXML
+    public void updateUser(ActionEvent actionEvent) {
+        TextInputDialog usernameDialog = new TextInputDialog();
+        usernameDialog.setTitle("Update User");
+        usernameDialog.setHeaderText("Enter Username:");
+        Optional<String> optionalUsername = usernameDialog.showAndWait();
+
+        if (optionalUsername.isPresent()) {
+            TextInputDialog passwordDialog = new TextInputDialog();
+            passwordDialog.setTitle("Set Password");
+            passwordDialog.setHeaderText("Enter Password:");
+            Optional<String> optionalPassword = passwordDialog.showAndWait();
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.hiddless.java_fx.dao;
 
 import com.hiddless.java_fx.database.SingletonDBConnection;
+import com.hiddless.java_fx.database.SingletonPropertiesDBConnection;
 import com.hiddless.java_fx.dto.UserDTO;
 
 import java.sql.Connection;
@@ -17,12 +18,12 @@ public class UserDAO implements IDaoImplements<UserDTO> {
     private Connection connection;
 
     public UserDAO() {
-        this.connection = SingletonDBConnection.getInstance().getConnection();
+        this.connection = SingletonPropertiesDBConnection.getInstance().getConnection();
     }
 
     @Override
     public Optional<UserDTO> create(UserDTO userDTO) {
-        String sql = "INSERT INTO users (username, password, email) VALUES(?, ?, ?)";
+        String sql = "INSERT INTO usertable (username, password, email) VALUES(?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setString(1, userDTO.getUsername());
             preparedStatement.setString(2, userDTO.getPassword());
@@ -48,7 +49,7 @@ public class UserDAO implements IDaoImplements<UserDTO> {
     @Override
     public Optional<List<UserDTO>> list() {
         List<UserDTO> userDTOList = new ArrayList<>();
-        String sql = "SELECT * FROM users";
+        String sql = "SELECT * FROM usertable";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             ResultSet resultSet = preparedStatement.executeQuery();
 
@@ -69,13 +70,13 @@ public class UserDAO implements IDaoImplements<UserDTO> {
 
     @Override
     public Optional<UserDTO> findByName(String name) {
-        String sql = "SELECT * FROM users WHERE email=?";
+        String sql = "SELECT * FROM usertable WHERE email=?";
         return selectSingle(sql, name);
     }
 
     @Override
     public Optional<UserDTO> findById(int id) {
-        String sql = "SELECT * FROM users WHERE id=?";
+        String sql = "SELECT * FROM usertable WHERE id=?";
         return selectSingle(sql, id);
     }
 
@@ -83,7 +84,7 @@ public class UserDAO implements IDaoImplements<UserDTO> {
     public Optional<UserDTO> update(int id, UserDTO userDTO) {
         Optional<UserDTO> optionalUpdate = findById(id);
         if (optionalUpdate.isPresent()) {
-            String sql = "UPDATE users SET username=?, password=?, email=? WHERE id=?";
+            String sql = "UPDATE usertable SET username=?, password=?, email=? WHERE id=?";
             try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                 preparedStatement.setString(1, userDTO.getUsername());
                 preparedStatement.setString(2, userDTO.getPassword());
@@ -106,7 +107,7 @@ public class UserDAO implements IDaoImplements<UserDTO> {
     public Optional<UserDTO> delete(int id) {
         Optional<UserDTO> optionalDelete = findById(id);
         if (optionalDelete.isPresent()) {
-            String sql = "DELETE FROM users WHERE id=?";
+            String sql = "DELETE FROM usertable WHERE id=?";
             try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                 preparedStatement.setInt(1, id);
 
@@ -152,7 +153,7 @@ public class UserDAO implements IDaoImplements<UserDTO> {
 
     @Override
     public Optional loginUser(String username, String password) {
-        String sql = "SELECT * FROM users WHERE username=? AND password=?";
+        String sql = "SELECT * FROM usertable WHERE username=? AND password=?";
         return selectSingle(sql, username, password);
     }
 }

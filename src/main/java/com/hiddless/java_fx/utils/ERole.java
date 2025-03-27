@@ -1,8 +1,8 @@
-package com.hiddless.java_fx.dto;
+package com.hiddless.java_fx.utils;
 
 public enum ERole {
-    STUDENT("Student"),
-    TEACHER("Teacher"),
+    USER("user"),
+    MODERATOR("moderator"),
     ADMIN("admin");
 
     private final String description;
