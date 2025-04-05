@@ -1,11 +1,14 @@
 package com.hiddless.java_fx.utils;
-
+/**
+ * 📌 Kullanıcı Rollerini Tanımlayan Enum
+ */
 public enum ERole {
-    USER("user"),
-    MODERATOR("moderator"),
-    ADMIN("admin");
+    USER("Kullanıcı"),
+    MODERATOR("Moderatör"),
+    ADMIN("Yönetici");
 
     private final String description;
+
     ERole(String description) {
         this.description = description;
     }
@@ -14,11 +17,19 @@ public enum ERole {
         return description;
     }
 
+    /**
+     * 📌 String’den Enum’a güvenli dönüşüm yapar.
+     */
     public static ERole fromString(String role) {
         try {
             return ERole.valueOf(role.toUpperCase());
-        }catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid Role: " + role);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("❌ Geçersiz rol: " + role);
         }
+    }
+
+    @Override
+    public String toString() {
+        return description; // ComboBox’ta görünen metin
     }
 }

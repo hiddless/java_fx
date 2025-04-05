@@ -2,6 +2,9 @@ package com.hiddless.java_fx.controller;
 
 import com.hiddless.java_fx.dao.UserDAO;
 import com.hiddless.java_fx.dto.UserDTO;
+import com.hiddless.java_fx.utils.ERole;
+import com.hiddless.java_fx.utils.FXMLPath;
+import com.hiddless.java_fx.utils.SceneHelper;
 import com.hiddless.java_fx.utils.SpecialColor;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,7 +19,6 @@ import javafx.stage.Stage;
 import java.util.Optional;
 
 public class RegisterController {
-
     private UserDAO userDAO;
 
     public RegisterController() {
@@ -25,10 +27,8 @@ public class RegisterController {
 
     @FXML
     private TextField usernameField;
-
     @FXML
     private TextField passwordField;
-
     @FXML
     private TextField emailField;
 
@@ -48,44 +48,62 @@ public class RegisterController {
 
     @FXML
     public void register() {
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-        String email = emailField.getText();
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText().trim();
+        String email = emailField.getText().trim();
 
-        Optional<UserDTO> optionalRegisterUserDTO = Optional.ofNullable(UserDTO.builder()
-                .id(0)
+        if (username.isEmpty() || password.isEmpty() || email.isEmpty()) {
+            showAlert("Hata", "Lütfen tüm alanları doldurun", Alert.AlertType.ERROR);
+            return;
+        }
+
+        // Kullanıcı adı kontrolü
+        if (userDAO.isUsernameExists(username)) {
+            showAlert("Hata", "Bu kullanıcı adı zaten kayıtlı!", Alert.AlertType.WARNING);
+            return;
+        }
+
+        // Email kontrolü
+        if (userDAO.isEmailExists(email)) {
+            showAlert("Hata", "Bu e-posta adresi zaten kayıtlı!", Alert.AlertType.WARNING);
+            return;
+        }
+
+        UserDTO userDTO = UserDTO.builder()
                 .username(username)
                 .password(password)
                 .email(email)
-                .build());
+                .role(ERole.USER) // enum olarak
+                .build();
 
-        if (optionalRegisterUserDTO.isPresent()) {
-            UserDTO userDTO = optionalRegisterUserDTO.get();
-
-            showAlert("Success", "Registration Successful", Alert.AlertType.INFORMATION);
-
+        Optional<UserDTO> createdUser = userDAO.create(userDTO);
+        if (createdUser.isPresent()) {
+            showAlert("Başarılı", "Kayıt başarılı", Alert.AlertType.INFORMATION);
             switchToLoginPane();
         } else {
-            showAlert("Error", "Registration Failed", Alert.AlertType.ERROR);
+            showAlert("Hata", "Kayıt başarısız oldu", Alert.AlertType.ERROR);
         }
     }
+
 
     @FXML
     private void switchToLoginPane() {
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/hiddless/java_fx/view/login.fxml"));
+            //1.YOL
+            /*
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(FXMLPath.LOGIN));
             Parent parent = fxmlLoader.load();
-
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(parent));
-
-            stage.setTitle("Login");
-
+            stage.setTitle("Giriş Yap");
             stage.show();
+             */
+            //2.YOL
+            SceneHelper.switchScene(FXMLPath.LOGIN, usernameField, "Giriş Yap");
         } catch (Exception e) {
-            System.out.println(SpecialColor.RED + "Failed to redirect to Login page" + SpecialColor.RESET);
+            System.out.println(SpecialColor.RED + "Login Sayfasına yönlendirme başarısız" + SpecialColor.RESET);
             e.printStackTrace();
-            showAlert("Error", "Failed to load Login page", Alert.AlertType.ERROR);
+            showAlert("Hata", "Login ekranı yüklenemedi", Alert.AlertType.ERROR);
         }
     }
 }
