@@ -22,13 +22,6 @@
         <tag/>
         <url/>
     </scm>
-
-    <!--
-    war: java EE için kullanalım. JSP,servlet,html,css3
-    jar: Spring Boot için kullanalım
-    -->
-    <!--apache tomcat manuel için war ekliyorum-->
-    <!--<packaging>war</packaging>-->
     <packaging>jar</packaging>
 
     <!--Dikkat: JavaFX JDK 17 istiyor 27-03-2025-->
@@ -202,6 +195,21 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- JavaFX base (StringBinding, ObjectProperty vs. için gerekli) -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>17.0.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+
     </dependencies>
 
 
@@ -231,7 +239,7 @@
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>
-                                com/hiddless/java_fx/HelloApplication.java
+                                com.hiddless.java_fx.HelloApplication
                             </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>

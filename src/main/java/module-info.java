@@ -35,7 +35,6 @@ module com.hiddless.Intellij{
 
     // JDBC ile veritabanı bağlantısı kurabilmek için gerekli modül
     // Java'daki SQL işlemlerini (Connection, Statement, ResultSet vb.) gerçekleştirebilmek için gereklidir.
-    requires java.sql;
     requires com.h2database;
     requires jbcrypt;
     requires org.apache.poi.ooxml;
@@ -43,6 +42,8 @@ module com.hiddless.Intellij{
     requires java.desktop;
     requires java.mail;
     requires java.management;
+    requires com.google.gson;
+    requires java.sql;
     //requires eu.hansolo.tilesfx;
 
     // #######################################################################################

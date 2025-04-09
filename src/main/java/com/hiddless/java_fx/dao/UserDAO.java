@@ -183,6 +183,14 @@ public class UserDAO implements IDaoImplements<UserDTO>, ILogin<UserDTO> {
             return true; // hata varsa true dön ki işlem durdurulsun
         }
     }
+    public void updatePassword(UserDTO user) throws SQLException {
+        String sql = "UPDATE usertable SET password = ? WHERE id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, user.getPassword());
+            preparedStatement.setInt(2, user.getId());
+            preparedStatement.executeUpdate();
+        }
+    }
 
 
 }
