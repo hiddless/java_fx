@@ -42,6 +42,7 @@ module com.hiddless.Intellij{
     requires org.apache.pdfbox;
     requires java.desktop;
     requires java.mail;
+    requires java.management;
     //requires eu.hansolo.tilesfx;
 
     // #######################################################################################

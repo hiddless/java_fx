@@ -1,11 +1,16 @@
 package com.hiddless.java_fx.controller;
 
+import com.google.gson.*;
+import com.hiddless.java_fx.controller.NotebookController;
+import com.hiddless.java_fx.controller.ProfileController;
 import com.hiddless.java_fx.dao.KdvDAO;
+import com.hiddless.java_fx.dao.NotebookDAO;
 import com.hiddless.java_fx.dao.UserDAO;
+import com.hiddless.java_fx.database.SingletonPropertiesDBConnection;
 import com.hiddless.java_fx.dto.KdvDTO;
+import com.hiddless.java_fx.dto.NotebookDTO;
 import com.hiddless.java_fx.dto.UserDTO;
-import com.hiddless.java_fx.utils.ERole;
-import com.hiddless.java_fx.utils.FXMLPath;
+import com.hiddless.java_fx.utils.*;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -15,6 +20,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.print.Printer;
 import javafx.print.PrinterJob;
@@ -24,6 +30,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -35,24 +43,38 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.h2.util.json.JSONArray;
 
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
-public class AdminController {
+public class AdminController implements Initializable {
+
+    @FXML
+    public MenuButton languageMenuButton;
+    @FXML
+    public Button restoreDataButton;
+
 
     private UserDAO userDAO;
     private KdvDAO kdvDAO;
@@ -63,17 +85,23 @@ public class AdminController {
     }
 
     // User İçin
-    @FXML private TableView<UserDTO> userTable;
-    @FXML private TableColumn<UserDTO, Integer> idColumn;
-    @FXML private TableColumn<UserDTO, String> usernameColumn;
-    @FXML private TableColumn<UserDTO, String> emailColumn;
-    @FXML private TableColumn<UserDTO, String> passwordColumn;
-    @FXML private TableColumn<UserDTO, String> roleColumn;
-    //@FXML private ComboBox<String> roleComboBox; //// Sayfa açılır açılmaz geliyor
-    @FXML private TextField searchField;
-    @FXML private ComboBox<ERole> filterRoleComboBox;
+    @FXML
+    private TableView<UserDTO> userTable;
+    @FXML
+    private TableColumn<UserDTO, Integer> idColumn;
+    @FXML
+    private TableColumn<UserDTO, String> usernameColumn;
+    @FXML
+    private TableColumn<UserDTO, String> emailColumn;
+    @FXML
+    private TableColumn<UserDTO, String> passwordColumn;
+    @FXML
+    private TableColumn<UserDTO, String> roleColumn;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private ComboBox<ERole> filterRoleComboBox;
 
-    // KDV için
     @FXML
     private TableView<KdvDTO> kdvTable;
     @FXML
@@ -98,64 +126,13 @@ public class AdminController {
     @FXML
     private Label clockLabel;
 
-
     @FXML
-    public void initialize() {
-        // Zaman
-        Timeline timeline = new Timeline(
-                new KeyFrame(Duration.seconds(1), e -> {
-                    LocalDateTime now = LocalDateTime.now();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
-                    clockLabel.setText(now.format(formatter));
-                })
-        );
-        timeline.setCycleCount(Animation.INDEFINITE);
-        timeline.play();
+    private Button btnKdvExportTxt, btnKdvExportPdf, btnKdvExportExcel, btnKdvPrint, btnKdvMail;
 
-        // KULLANICI
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
-        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
-        emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
-        roleColumn.setCellValueFactory(new PropertyValueFactory<>("role"));
 
-        // Rol filtreleme için ComboBox
-        filterRoleComboBox.getItems().add(null); // boş seçenek: tüm roller
-        filterRoleComboBox.getItems().addAll(ERole.values());
-        filterRoleComboBox.setValue(null); // başlangıçta tüm roller
+    private Locale currentLocale = new Locale("tr");
+    private ResourceBundle bundle;
 
-        // Arama kutusu dinleme
-        searchField.textProperty().addListener((observable, oldVal, newVal) -> applyFilters());
-        filterRoleComboBox.valueProperty().addListener((obs, oldVal, newVal) -> applyFilters());
-
-        passwordColumn.setCellValueFactory(new PropertyValueFactory<>("password"));
-        passwordColumn.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(String password, boolean empty) {
-                super.updateItem(password, empty);
-                setText((empty || password == null) ? null : "******");
-            }
-        });
-
-        // Sayfa Açılır açılmaz geliyor
-        //roleComboBox.setItems(FXCollections.observableArrayList("USER", "ADMIN", "MODERATOR"));
-        //roleComboBox.getSelectionModel().select("USER");
-        refreshTable();
-
-        // KDV İÇİN
-        // KDV tablosunu hazırla
-        idColumnKdv.setCellValueFactory(new PropertyValueFactory<>("id"));
-        amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
-        kdvRateColumn.setCellValueFactory(new PropertyValueFactory<>("kdvRate"));
-        kdvAmountColumn.setCellValueFactory(new PropertyValueFactory<>("kdvAmount"));
-        totalAmountColumn.setCellValueFactory(new PropertyValueFactory<>("totalAmount"));
-        receiptColumn.setCellValueFactory(new PropertyValueFactory<>("receiptNumber"));
-        dateColumn.setCellValueFactory(new PropertyValueFactory<>("transactionDate"));
-        descColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
-
-        searchKdvField.textProperty().addListener((obs, oldVal, newVal) -> applyKdvFilter());
-
-        refreshKdvTable();
-    }
 
     // KULLANICI
     private void applyFilters() {
@@ -198,10 +175,67 @@ public class AdminController {
             stage.show();
         } catch (IOException e) {
             showAlert("Hata", "KDV ekranı açılamadı!", Alert.AlertType.ERROR);
+            NotificationUtils.showNotification("KDV ekranı açılamadı!", NotificationType.ERROR);
             e.printStackTrace();
         }
     }
 
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+
+        System.out.println("Admincontroller initialize çağrıldı!");
+        // Dil yükleme
+        loadLanguage(currentLocale);
+
+        // Zaman
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), e -> {
+                    LocalDateTime now = LocalDateTime.now();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+                    clockLabel.setText(now.format(formatter));
+                })
+        );
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
+
+
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
+        roleColumn.setCellValueFactory(new PropertyValueFactory<>("role"));
+
+        filterRoleComboBox.getItems().add(null);
+        filterRoleComboBox.getItems().addAll(ERole.values());
+        filterRoleComboBox.setValue(null);
+
+        searchField.textProperty().addListener((observable, oldVal, newVal) -> applyFilters());
+        filterRoleComboBox.valueProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+
+        passwordColumn.setCellValueFactory(new PropertyValueFactory<>("password"));
+        passwordColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String password, boolean empty) {
+                super.updateItem(password, empty);
+                setText((empty || password == null) ? null : "******");
+            }
+        });
+
+        refreshTable();
+
+        // KDV tablosu
+        idColumnKdv.setCellValueFactory(new PropertyValueFactory<>("id"));
+        amountColumn.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        kdvRateColumn.setCellValueFactory(new PropertyValueFactory<>("kdvRate"));
+        kdvAmountColumn.setCellValueFactory(new PropertyValueFactory<>("kdvAmount"));
+        totalAmountColumn.setCellValueFactory(new PropertyValueFactory<>("totalAmount"));
+        receiptColumn.setCellValueFactory(new PropertyValueFactory<>("receiptNumber"));
+        dateColumn.setCellValueFactory(new PropertyValueFactory<>("transactionDate"));
+        descColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+
+        searchKdvField.textProperty().addListener((obs, oldVal, newVal) -> applyKdvFilter());
+
+        refreshKdvTable();
+    }
 
     @FXML
     private void refreshTable() {
@@ -260,7 +294,6 @@ public class AdminController {
         }
     }
 
-    // Eğer uygulaman Linux/macOS'ta çalışabilir olacaksa, şu şekilde platform kontrolü de ekleyebilirsin:
     @FXML
     public void openCalculator() {
         String os = System.getProperty("os.name").toLowerCase();
@@ -290,7 +323,8 @@ public class AdminController {
         ComboBox<String> kdvBox = new ComboBox<>();
         kdvBox.getItems().addAll("1%", "8%", "18%", "Özel");
         kdvBox.setValue("18%");
-        TextField customKdv = new TextField(); customKdv.setDisable(true);
+        TextField customKdv = new TextField();
+        customKdv.setDisable(true);
         TextField receiptField = new TextField();
         DatePicker datePicker = new DatePicker();
         Label resultLabel = new Label();
@@ -301,7 +335,8 @@ public class AdminController {
         });
 
         GridPane grid = new GridPane();
-        grid.setHgap(10); grid.setVgap(10);
+        grid.setHgap(10);
+        grid.setVgap(10);
         grid.addRow(0, new Label("Tutar:"), amountField);
         grid.addRow(1, new Label("KDV Oranı:"), kdvBox);
         grid.addRow(2, new Label("Özel Oran:"), customKdv);
@@ -327,12 +362,12 @@ public class AdminController {
                     double total = amount + kdv;
 
                     String result = String.format("""
-                            Fiş No: %s
-                            Tarih: %s
-                            Ara Toplam: %.2f ₺
-                            KDV (%%%.1f): %.2f ₺
-                            Genel Toplam: %.2f ₺
-                            """,
+                                    Fiş No: %s
+                                    Tarih: %s
+                                    Ara Toplam: %.2f ₺
+                                    KDV (%%%.1f): %.2f ₺
+                                    Genel Toplam: %.2f ₺
+                                    """,
                             receiptField.getText(), datePicker.getValue(),
                             amount, rate, kdv, total);
 
@@ -414,6 +449,7 @@ public class AdminController {
             showAlert("Başarılı", "TXT masaüstüne kaydedildi", Alert.AlertType.INFORMATION);
         } catch (IOException e) {
             showAlert("Hata", "TXT kaydedilemedi.", Alert.AlertType.ERROR);
+            NotificationUtils.showNotification("TXT kaydedilemedi.", NotificationType.ERROR);
         }
     }
 
@@ -439,6 +475,7 @@ public class AdminController {
             File file = new File(System.getProperty("user.home") + "/Desktop/kdv_" + System.currentTimeMillis() + ".pdf");
             doc.save(file);
             showAlert("Başarılı", "PDF masaüstüne kaydedildi", Alert.AlertType.INFORMATION);
+
         } catch (IOException e) {
             showAlert("Hata", "PDF kaydedilemedi.", Alert.AlertType.ERROR);
         }
@@ -449,13 +486,11 @@ public class AdminController {
         try (Workbook wb = new XSSFWorkbook()) {
             Sheet sheet = wb.createSheet("KDV");
 
-            // Stil tanımı (isteğe bağlı)
             var headerStyle = wb.createCellStyle();
             var font = wb.createFont();
             font.setBold(true);
             headerStyle.setFont(font);
 
-            // Başlıkları yaz
             Row header = sheet.createRow(0);
             String[] headers = {"ID", "Tutar", "KDV Oranı", "KDV Tutarı", "Toplam", "Fiş No", "Tarih", "Açıklama"};
             for (int i = 0; i < headers.length; i++) {
@@ -464,7 +499,6 @@ public class AdminController {
                 cell.setCellStyle(headerStyle);
             }
 
-            // Satırları yaz
             int rowNum = 1;
             for (KdvDTO kdv : kdvTable.getItems()) {
                 Row row = sheet.createRow(rowNum++);
@@ -478,18 +512,18 @@ public class AdminController {
                 row.createCell(7).setCellValue(kdv.getDescription());
             }
 
-            // Otomatik sütun genişliği ayarla
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
             }
 
-            // Kaydet
             File file = new File(System.getProperty("user.home") + "/Desktop/kdv_" + System.currentTimeMillis() + ".xlsx");
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 wb.write(fos);
             }
 
             showAlert("Başarılı", "Excel masaüstüne kaydedildi", Alert.AlertType.INFORMATION);
+
+            NotificationUtils.showNotification("Excel masaüstüne kaydedildi", NotificationType.SUCCESS);
         } catch (IOException e) {
             showAlert("Hata", "Excel kaydedilemedi.", Alert.AlertType.ERROR);
         }
@@ -513,7 +547,6 @@ public class AdminController {
 
     @FXML
     public void printKdvTable() {
-        // Kdv tablosunu yazdır
         PrinterJob job = PrinterJob.createPrinterJob();
         if (job != null && job.showPrintDialog(kdvTable.getScene().getWindow())) {
             boolean success = job.printPage(kdvTable);
@@ -575,10 +608,7 @@ public class AdminController {
 
     @FXML
     private void goToSettings(ActionEvent event) throws IOException {
-       /* Parent root = FXMLLoader.load(getClass().getResource("/path/to/settings.fxml"));
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.setScene(new Scene(root));
-        stage.show();*/
+
     }
 
     @FXML
@@ -592,6 +622,186 @@ public class AdminController {
 
 
 
+    @FXML
+    private void languageTheme() {
+        currentLocale = currentLocale.getLanguage().equals("tr") ? new Locale("en") : new Locale("tr");
+        loadLanguage(currentLocale);
+    }
+
+
+
+    @FXML
+    private Label headerLabel;
+    @FXML
+    private Button darkModeButton;
+    @FXML
+    private Button notificationButton;
+    @FXML
+    private Button backupButton;
+    @FXML
+    private Button restoreButton;
+    @FXML
+    private Button notebookButton;
+    @FXML
+    private Button profileButton;
+    @FXML
+    private Button logoutButton;
+
+
+    @FXML
+    private Menu menuFile;
+    @FXML
+    private MenuItem menuItemExit;
+
+    @FXML
+    private Menu menuUser;
+    @FXML
+    private MenuItem menuItemAddUser;
+    @FXML
+    private MenuItem menuItemUpdateUser;
+    @FXML
+    private MenuItem menuItemDeleteUser;
+
+    @FXML
+    private Menu menuKdv;
+    @FXML
+    private MenuItem menuItemAddKdv;
+    @FXML
+    private MenuItem menuItemUpdateKdv;
+    @FXML
+    private MenuItem menuItemDeleteKdv;
+
+    @FXML
+    private Menu menuOther;
+    @FXML
+    private MenuItem menuItemCalculator;
+    @FXML
+    private MenuItem menuItemNotebook;
+
+    @FXML
+    private Menu menuHelp;
+    @FXML
+    private MenuItem menuItemAbout;
+
+    @FXML
+    private Label userTitleLabel;
+    @FXML
+    private Button btnAddUser;
+    @FXML
+    private Button btnUpdateUser;
+    @FXML
+    private Button btnDeleteUser;
+    @FXML
+    private Button btnPrintUser;
+
+    @FXML
+    private Button btnAddKdv;
+    @FXML
+    private Button btnUpdateKdv;
+    @FXML
+    private Button btnDeleteKdv;
+
+    @FXML
+    private Label kdvTitleLabel;
+
+    @FXML
+    private Label footerLabel;
+
+
+    private void loadLanguage(Locale locale) {
+        bundle = ResourceBundle.getBundle("com.hiddless.java_fx.view.languages", locale);
+
+
+
+        headerLabel.setText(bundle.getString("header.panel"));
+        darkModeButton.setText(bundle.getString("theme.dark"));
+        languageMenuButton.setText(bundle.getString("language")); // MenuButton için
+        notificationButton.setText(bundle.getString("notifications"));
+        backupButton.setText(bundle.getString("backup"));
+        restoreButton.setText(bundle.getString("restore"));
+        notebookButton.setText(bundle.getString("notebook"));
+        profileButton.setText(bundle.getString("profile"));
+        logoutButton.setText(bundle.getString("logout"));
+
+        menuFile.setText(bundle.getString("menu.file"));
+        menuItemExit.setText(bundle.getString("menu.exit"));
+
+        menuUser.setText(bundle.getString("menu.user"));
+        menuItemAddUser.setText(bundle.getString("menu.addUser"));
+        menuItemUpdateUser.setText(bundle.getString("menu.updateUser"));
+        menuItemDeleteUser.setText(bundle.getString("menu.deleteUser"));
+
+        menuKdv.setText(bundle.getString("menu.kdv"));
+        menuItemAddKdv.setText(bundle.getString("menu.addKdv"));
+        menuItemUpdateKdv.setText(bundle.getString("menu.updateKdv"));
+        menuItemDeleteKdv.setText(bundle.getString("menu.deleteKdv"));
+
+        menuOther.setText(bundle.getString("menu.other"));
+        menuItemCalculator.setText(bundle.getString("menu.calculator"));
+        menuItemNotebook.setText(bundle.getString("menu.notebook"));
+
+        menuHelp.setText(bundle.getString("menu.help"));
+        menuItemAbout.setText(bundle.getString("menu.about"));
+
+
+        searchField.setPromptText(bundle.getString("user.searchPrompt"));
+        filterRoleComboBox.setPromptText(bundle.getString("user.rolePrompt"));
+
+
+        kdvTitleLabel.setText(bundle.getString("kdv.title"));
+
+
+        btnAddKdv.setText(bundle.getString("kdv.add"));
+        btnUpdateKdv.setText(bundle.getString("kdv.update"));
+        btnDeleteKdv.setText(bundle.getString("kdv.delete"));
+
+        searchKdvField.setPromptText(bundle.getString("kdv.searchPrompt"));
+
+        btnKdvExportTxt.setText(bundle.getString("kdv.exportTxt"));
+        btnKdvExportPdf.setText(bundle.getString("kdv.exportPdf"));
+        btnKdvExportExcel.setText(bundle.getString("kdv.exportExcel"));
+        btnKdvPrint.setText(bundle.getString("kdv.print"));
+        btnKdvMail.setText(bundle.getString("kdv.mail"));
+
+
+        userTitleLabel.setText(bundle.getString("user.title"));
+        searchField.setPromptText(bundle.getString("user.searchPrompt"));
+        filterRoleComboBox.setPromptText(bundle.getString("user.rolePrompt"));
+        btnAddUser.setText(bundle.getString("user.add"));
+        btnUpdateUser.setText(bundle.getString("user.update"));
+        btnDeleteUser.setText(bundle.getString("user.delete"));
+        btnPrintUser.setText(bundle.getString("user.print"));
+
+
+        idColumnKdv.setText(bundle.getString("kdv.id"));
+        amountColumn.setText(bundle.getString("kdv.amount"));
+        kdvRateColumn.setText(bundle.getString("kdv.rate"));
+        kdvAmountColumn.setText(bundle.getString("kdv.amountValue"));
+        totalAmountColumn.setText(bundle.getString("kdv.total"));
+        receiptColumn.setText(bundle.getString("kdv.receipt"));
+        dateColumn.setText(bundle.getString("kdv.date"));
+        descColumn.setText(bundle.getString("kdv.description"));
+        idColumn.setText(bundle.getString("user.id"));
+        usernameColumn.setText(bundle.getString("user.username"));
+        emailColumn.setText(bundle.getString("user.email"));
+        passwordColumn.setText(bundle.getString("user.password"));
+        roleColumn.setText(bundle.getString("user.role"));
+
+        footerLabel.setText(bundle.getString("footer"));
+
+    }
+
+    @FXML
+    private void switchToTurkish() {
+        currentLocale = new Locale("tr");
+        loadLanguage(currentLocale);
+    }
+
+    @FXML
+    private void switchToEnglish() {
+        currentLocale = new Locale("en");
+        loadLanguage(currentLocale);
+    }
 
     /// //////////////////////////////////////////////////////////
     private static class AddUserDialog extends Dialog<UserDTO> {
@@ -604,13 +814,10 @@ public class AdminController {
             setTitle("Yeni Kullanıcı Ekle");
             setHeaderText("Yeni kullanıcı bilgilerini girin");
 
-            // Manuel Ekleme
-            //roleComboBox.getItems().addAll("USER", "ADMIN", "MODERATOR");
-            //roleComboBox.setValue("USER");
 
             ComboBox<ERole> roleComboBox = new ComboBox<>();
             roleComboBox.getItems().addAll(ERole.values());
-            roleComboBox.setValue(ERole.USER); // Varsayılan seçim
+            roleComboBox.setValue(ERole.USER);
 
 
             GridPane grid = new GridPane();
@@ -678,11 +885,8 @@ public class AdminController {
     }
 
 
-
     @FXML
     public void addUserEski(ActionEvent actionEvent) {
-        // Sayfa açılır açılmaz geliyor
-        //String role = roleComboBox.getValue();
 
         TextInputDialog usernameDialog = new TextInputDialog();
         usernameDialog.setTitle("Kullanıcı Ekle");
@@ -727,7 +931,6 @@ public class AdminController {
                 .username(username)
                 .password(password)
                 .email(email)
-                //.role(role) //// Sayfa açılır açılmaz geliyor
                 .build();
 
         Optional<UserDTO> createdUser = userDAO.create(newUser);
@@ -752,17 +955,14 @@ public class AdminController {
             usernameField.setText(existingUser.getUsername());
             emailField.setText(existingUser.getEmail());
 
-            // 🔥 ENUM kullanımıyla rol listesi
             roleComboBox.getItems().addAll(ERole.values());
 
-            // 🔥 Mevcut role'u enum olarak seç
             try {
                 roleComboBox.setValue(ERole.fromString(String.valueOf(existingUser.getRole())));
             } catch (RuntimeException e) {
-                roleComboBox.setValue(ERole.USER); // Yedek: varsayılan rol
+                roleComboBox.setValue(ERole.USER);
             }
 
-            // Layout
             GridPane grid = new GridPane();
             grid.setHgap(10);
             grid.setVgap(10);
@@ -791,7 +991,7 @@ public class AdminController {
                                     ? existingUser.getPassword()
                                     : passwordField.getText().trim())
                             .email(emailField.getText().trim())
-                            .role(ERole.valueOf(roleComboBox.getValue().name())) // Enum’dan string’e dönüşüm
+                            .role(ERole.valueOf(roleComboBox.getValue().name()))
                             .build();
                 }
                 return null;
@@ -827,14 +1027,11 @@ public class AdminController {
         Optional<String> newEmail = emailDialog.showAndWait();
         if (newEmail.isEmpty()) return;
 
-        // Sayfa açılır açılmaz geliyor
-        //String role = roleComboBox.getValue();
 
         UserDTO updatedUser = UserDTO.builder()
                 .username(newUsername.get())
                 .password(newPassword.get())
                 .email(newEmail.get())
-                //.role(role) //// Sayfa açılır açılmaz geliyor
                 .build();
 
         Optional<UserDTO> result = userDAO.update(selectedUser.getId(), updatedUser);
@@ -896,14 +1093,12 @@ public class AdminController {
         });
     }
 
-    // KDV
-    // 📄 Listeyi yenile
+
     private void refreshKdvTable() {
         Optional<List<KdvDTO>> list = kdvDAO.list();
         list.ifPresent(data -> kdvTable.setItems(FXCollections.observableArrayList(data)));
     }
 
-    // 🔎 Arama filtreleme
     private void applyKdvFilter() {
         String keyword = searchKdvField.getText().trim().toLowerCase();
         Optional<List<KdvDTO>> all = kdvDAO.list();
@@ -913,7 +1108,7 @@ public class AdminController {
         kdvTable.setItems(FXCollections.observableArrayList(filtered));
     }
 
-    // ➕ KDV ekle
+
     @FXML
     public void addKdv() {
         KdvDTO newKdv = showKdvForm(null);
@@ -924,7 +1119,6 @@ public class AdminController {
         }
     }
 
-    // ✏️ KDV güncelle
     @FXML
     public void updateKdv() {
         KdvDTO selected = kdvTable.getSelectionModel().getSelectedItem();
@@ -941,7 +1135,7 @@ public class AdminController {
         }
     }
 
-    // ❌ KDV sil
+    //
     @FXML
     public void deleteKdv() {
         KdvDTO selected = kdvTable.getSelectionModel().getSelectedItem();
@@ -960,7 +1154,6 @@ public class AdminController {
         }
     }
 
-    // 💬 Ortak form (ekle/güncelle)
     private KdvDTO showKdvForm(KdvDTO existing) {
         Dialog<KdvDTO> dialog = new Dialog<>();
         dialog.setTitle(existing == null ? "Yeni KDV Ekle" : "KDV Güncelle");
@@ -984,7 +1177,8 @@ public class AdminController {
         }
 
         GridPane grid = new GridPane();
-        grid.setHgap(10); grid.setVgap(10);
+        grid.setHgap(10);
+        grid.setVgap(10);
         grid.addRow(0, new Label("Tutar:"), amountField);
         grid.addRow(1, new Label("KDV Oranı (%):"), rateField);
         grid.addRow(2, new Label("Fiş No:"), receiptField);
@@ -1018,40 +1212,217 @@ public class AdminController {
     }
 
     // BİTİRME PROJESİ
-    @FXML
-    private void toggleTheme(ActionEvent event) {
-        // Tema değiştirme işlemleri burada yapılacak
-    }
+
+    private boolean isDarkMode = false;
 
     @FXML
-    private void languageTheme(ActionEvent event) {
-        // Uygulamanın dili değiştirilecek (TR/EN vs.)
+    private void toggleTheme() {
+        Scene scene = darkModeButton.getScene();
+        if (scene == null) return;
+
+        String darkTheme = getClass().getResource("/com/hiddless/java_fx/view/css/dark-theme.css").toExternalForm();
+        String lightTheme = getClass().getResource("/com/hiddless/java_fx/view/css/admin.css").toExternalForm();
+
+        if (isDarkMode) {
+            scene.getStylesheets().remove(darkTheme);
+            scene.getStylesheets().add(lightTheme);
+            isDarkMode = false;
+            NotificationUtils.showNotification("Tema değiştirildi", NotificationType.SUCCESS);
+        } else {
+            scene.getStylesheets().remove(lightTheme);
+            scene.getStylesheets().add(darkTheme);
+            isDarkMode = true;
+            NotificationUtils.showNotification("Tema değiştirildi", NotificationType.SUCCESS);
+        }
     }
+
 
     @FXML
     private void showNotifications(ActionEvent event) {
-        // Bildirimleri gösteren popup veya panel açılacak
+        try {
+            System.out.println(getClass().getResource("/notification.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/notification.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Bildirim Geçmişi");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
+
+    private UserDTO currentUser;
+
+    public void setUser(UserDTO user) {
+        System.out.println("✅ AdminController#setUser: " + user);
+
+        this.currentUser = user;
+    }
+
+
     @FXML
-    private void showProfile(ActionEvent event) {
-        // Kullanıcı profil bilgileri gösterilecek pencere
+    private void showProfile() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/hiddless/java_fx/view/profile.fxml"));
+            Parent root = loader.load();
+
+            ProfileController controller = loader.getController();
+            UserDTO currentUser = SessionManager.getCurrentUser();
+
+            if (currentUser != null) {
+                controller.setUser(currentUser);
+            } else {
+                System.err.println("currentUser null! setUser(...) çağrılmamış olabilir.");
+                return;
+            }
+
+            Stage stage = new Stage();
+            stage.setTitle("Profil");
+            stage.setScene(new Scene(root));
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
     private void backupData(ActionEvent event) {
-        // Veritabanı yedekleme işlemleri burada yapılacak
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Yedekleme Dosyasını Kaydet");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ZIP Files", "*.zip"));
+        File saveLocation = fileChooser.showSaveDialog(backupButton.getScene().getWindow());
+
+        if (saveLocation != null) {
+            try (FileOutputStream fos = new FileOutputStream(saveLocation);
+                 ZipOutputStream zos = new ZipOutputStream(fos)) {
+
+                Optional<List<UserDTO>> allUsers = userDAO.list();
+
+                if (allUsers.isPresent()) {
+                    List<UserDTO> users = allUsers.get();
+
+                    Gson gson = new GsonBuilder()
+                            .excludeFieldsWithModifiers(Modifier.STATIC)
+                            .serializeNulls()
+                            .create();
+
+                    String json = gson.toJson(users);
+
+                    ZipEntry zipEntry = new ZipEntry("backup.json");
+                    zos.putNextEntry(zipEntry);
+                    zos.write(json.getBytes());
+
+                    zos.closeEntry();
+
+                    NotificationUtils.showNotification("Yedekleme tamamlandı", NotificationType.SUCCESS);
+                } else {
+                    System.out.println("Yedeklenecek kullanıcı verisi bulunamadı.");
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                NotificationUtils.showNotification("Yedekleme başarısız oldu", NotificationType.ERROR);
+            }
+        }
     }
 
     @FXML
     private void restoreData(ActionEvent event) {
-        // Daha önce alınmış bir yedek dosyadan veri geri yüklenecek
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Yedek Dosyasını Seç");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Backup File", "*.json"));
+
+        java.io.File file = fileChooser.showOpenDialog(null);
+        if (file == null) {
+            return;
+        }
+
+        try {
+            String jsonContent = Files.readString(Path.of(file.getAbsolutePath()));
+            JSONArray jsonArray = JsonParser.parseString(jsonContent).getAsJsonArray();
+
+            Connection conn = SingletonPropertiesDBConnection.getInstance().getConnection();
+
+            Statement stmt = conn.createStatement();
+            stmt.execute("DELETE FROM users");
+
+            String insertSQL = "INSERT INTO users (id, username, password, email) VALUES (?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(insertSQL);
+
+            for (JsonElement jsonElement : jsonArray){
+                JsonObject user = jsonElement.getAsJsonObject();
+
+                int id = user.get("id").getAsInt();
+                String username = user.get("username").getAsString();
+                String password = user.get("password").getAsString();
+                String email = user.get("email").getAsString();
+
+
+                pstmt.setInt(1, id);
+                pstmt.setString(2, username);
+                pstmt.setString(3, password);
+                pstmt.setString(4, email);
+
+
+                pstmt.executeUpdate();
+            }
+            pstmt.close();
+            System.out.println("Kullanıcılar başarıyla yüklendi!");
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
+    private NotebookDAO notebookDAO = new NotebookDAO();
 
     @FXML
     private void notebook(ActionEvent event) {
-        // Daha önce alınmış bir yedek dosyadan veri geri yüklenecek
+        try {
+            System.out.println(getClass().getResource("/noteForm.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/noteForm.fxml"));
+            Parent root = loader.load();
+
+            NotebookController controller = loader.getController();
+
+
+            UserDTO currentUser = SessionManager.getCurrentUser();
+            if (currentUser == null) {
+                System.err.println("currentUser null! setUser(...) çağrılmamış olabilir.");
+                return;
+            }
+
+            Stage stage = new Stage();
+            stage.setTitle("Yeni Not Ekle");
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+
+            com.hiddless.java_fx.dto.NotebookDTO createdNote = controller.getCreatedNote();
+            controller.setCreatedNote(createdNote);
+
+            if (createdNote != null) {
+                System.out.println("Yeni not oluşturuldu:");
+                NotificationUtils.showNotification("Yeni not oluşturuldu:", NotificationType.SUCCESS);
+                createdNote.setUserDTO(currentUser);
+                notebookDAO.save(createdNote);
+                notebookDAO.saveToFile(createdNote);
+                System.out.println(createdNote.toString());
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }
