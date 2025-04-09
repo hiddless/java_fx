@@ -2,7 +2,10 @@ package com.hiddless.java_fx.controller;
 
 import com.hiddless.java_fx.dao.UserDAO;
 import com.hiddless.java_fx.dto.UserDTO;
-import com.hiddless.java_fx.utils.*;
+import com.hiddless.java_fx.utils.ERole;
+import com.hiddless.java_fx.utils.FXMLPath;
+import com.hiddless.java_fx.utils.SceneHelper;
+import com.hiddless.java_fx.utils.SpecialColor;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -44,27 +47,23 @@ public class LoginController {
 
     @FXML
     public void login() {
+
+        //
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
+
         Optional<UserDTO> optionalLoginUserDTO = userDAO.loginUser(username, password);
+
         if (optionalLoginUserDTO.isPresent()) {
             UserDTO userDTO = optionalLoginUserDTO.get();
             showAlert("Başarılı", "Giriş Başarılı: " + userDTO.getUsername(), Alert.AlertType.INFORMATION);
-            System.out.println("Login olan kullanıcı: " + userDTO.getUsername());
-            System.out.println("Veritabanındaki hash şifre: " + userDTO.getPassword());
-
-            SessionManager.setCurrentUser(userDTO);
-
-            int requestedUserId = userDTO.getId();
-            Optional<UserDTO> fullUserProfile = new UserDAO().findById(requestedUserId);
-            fullUserProfile.ifPresent(SessionManager::setCurrentUser);
 
             if (userDTO.getRole() == ERole.ADMIN) {
-                openAdminPane(userDTO);
-
+                openAdminPane();
             } else {
                 openUserHomePane();
             }
+
 
         } else {
             showAlert("Başarısız", "Giriş bilgileri hatalı", Alert.AlertType.ERROR);
@@ -88,13 +87,10 @@ public class LoginController {
 
 
 
-    private void openAdminPane(UserDTO user) {
+    private void openAdminPane() {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(FXMLPath.ADMIN));
             Parent parent = fxmlLoader.load();
-
-            AdminController controller = fxmlLoader.getController();
-            controller.setUser(user); // ✅ artık null değil
 
             Stage stage = (Stage) usernameField.getScene().getWindow();
             stage.setScene(new Scene(parent));
@@ -106,7 +102,6 @@ public class LoginController {
             showAlert("Hata", "Admin ekranı yüklenemedi", Alert.AlertType.ERROR);
         }
     }
-
 
     @FXML
     private void switchToRegister(ActionEvent actionEvent) {

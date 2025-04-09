@@ -719,7 +719,7 @@ public class AdminController {
 
 
     private void loadLanguage(Locale locale) {
-        bundle = ResourceBundle.getBundle("com.hiddless.java_fx.messages", locale);
+        bundle = ResourceBundle.getBundle("com.hiddless.java_fx.view.messages", locale);
 
         headerLabel.setText(bundle.getString("header.panel"));
         darkModeButton.setText(bundle.getString("theme.dark"));
