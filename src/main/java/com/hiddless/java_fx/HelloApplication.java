@@ -1,63 +1,108 @@
 package com.hiddless.java_fx;
 
+import com.hiddless.java_fx.database.SingletonPropertiesDBConnection;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.mindrot.jbcrypt.BCrypt;
 
-import java.sql.*;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class HelloApplication extends Application {
 
-    private static final String DB_URL = "jdbc:h2:./database;AUTO_SERVER=TRUE";
-    private static final String DB_USER = "sa";
-    private static final String DB_PASSWORD = "";
-
     @Override
-    public void start(Stage stage) {
-        try {
-            initializeDatabase();
+    public void start(Stage stage) throws IOException, SQLException {
 
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/hiddless/java_fx/view/login.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), 600, 400);
-            stage.setTitle("Login");
-            stage.setScene(scene);
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Error loading FXML: " + e.getMessage());
-        }
+        // Örnek Veri
+        dataSet();
+
+
+        // Başlangıç ekranı: Login
+        // view/admin.fxml
+        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("view/login.fxml"));
+        Parent parent = fxmlLoader.load();
+        stage.setTitle("Kullanıcı Yönetimi Login Sayfası");
+        stage.setScene(new Scene(parent));
+        stage.show();
     }
 
-    private void initializeDatabase() {
-        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             Statement statement = connection.createStatement()) {
 
-            String createUsersTable = "CREATE TABLE IF NOT EXISTS users ("
-                    + "id INT AUTO_INCREMENT PRIMARY KEY,"
-                    + "username VARCHAR(50) NOT NULL UNIQUE,"
-                    + "password VARCHAR(255) NOT NULL,"
-                    + "email VARCHAR(100) NOT NULL UNIQUE);";
+    public static void dataSet() throws SQLException {
+        Connection connection = SingletonPropertiesDBConnection.getInstance().getConnection();
 
-            statement.execute(createUsersTable);
+        // Tablo oluşturma
+        // Tablo oluşturma (usertable + kdv_table)
+        try (Statement stmt = connection.createStatement()) {
+            // Kullanıcı tablosu
+            String createUserTableSQL = """
+        CREATE TABLE IF NOT EXISTS usertable (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            role VARCHAR(50) DEFAULT 'USER'
+        );
+    """;
+            stmt.execute(createUserTableSQL);
 
-            String createReceiptsTable = "CREATE TABLE IF NOT EXISTS receipts ("
-                    + "id INT AUTO_INCREMENT PRIMARY KEY,"
-                    + "user_id INT NOT NULL,"
-                    + "amount DECIMAL(10,2) NOT NULL,"
-                    + "date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
-                    + "FOREIGN KEY (user_id) REFERENCES users(id));";
-
-            statement.execute(createReceiptsTable);
-
-            System.out.println("Database initialized successfully.");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.err.println("Database initialization failed: " + e.getMessage());
+            // KDV tablosu
+            String createKdvTableSQL = """
+        CREATE TABLE IF NOT EXISTS kdv_table (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            amount DOUBLE NOT NULL,
+            kdvRate DOUBLE NOT NULL,
+            kdvAmount DOUBLE NOT NULL,
+            totalAmount DOUBLE NOT NULL,
+            receiptNumber VARCHAR(100) NOT NULL,
+            transactionDate DATE NOT NULL,
+            description VARCHAR(255),
+            exportFormat VARCHAR(50)
+        );
+    """;
+            stmt.execute(createKdvTableSQL);
         }
-    }
 
+
+        // Kullanıcı ekleme
+        String insertSQL = """
+            MERGE INTO usertable (username, password, email, role)
+            KEY(username) VALUES (?, ?, ?, ?);
+        """;
+
+        try (PreparedStatement ps = connection.prepareStatement(insertSQL)) {
+            // 1. kullanıcı
+            ps.setString(1, "hiddles");
+            ps.setString(2, BCrypt.hashpw("hiddles", BCrypt.gensalt()));
+            ps.setString(3, "hiddles@gmail.com");
+            ps.setString(4, "USER");
+            ps.executeUpdate();
+
+            // 2. kullanıcı
+            ps.setString(1, "admin");
+            //ps.setString(2, BCrypt.hashpw("root", BCrypt.gensalt()));
+            ps.setString(2, BCrypt.hashpw("root", BCrypt.gensalt()));
+            ps.setString(3, "admin@gmail.com");
+            ps.setString(4, "ADMIN");
+            ps.executeUpdate();
+
+            // 3. kullanıcı
+            ps.setString(1, "root");
+            //ps.setString(2, BCrypt.hashpw("root", BCrypt.gensalt()));
+            ps.setString(2, BCrypt.hashpw("root", BCrypt.gensalt()));
+            ps.setString(3, "root");
+            ps.setString(4, "ADMIN");
+            ps.executeUpdate();
+        }
+
+        System.out.println("✅ BCrypt ile şifrelenmiş ve roller atanmış kullanıcılar başarıyla eklendi.");
+    }
     public static void main(String[] args) {
-        launch(args);
+        launch();
     }
 }

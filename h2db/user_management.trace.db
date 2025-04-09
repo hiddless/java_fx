@@ -148,3 +148,12 @@ SELECT 1 FROM usertable WHERE username = ? [42102-224]
 2025-04-09 16:53:02.792524+03:00 jdbc[3]: exception
 org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERTABLE" not found; SQL statement:
 SELECT 1 FROM usertable WHERE username = ? [42102-224]
+2025-04-09 17:04:39.608203+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERTABLE" not found; SQL statement:
+SELECT 1 FROM usertable WHERE username = ? [42102-224]
+2025-04-09 17:21:36.861766+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERTABLE" not found; SQL statement:
+SELECT 1 FROM usertable WHERE username = ? [42102-224]
+2025-04-09 17:21:58.275545+03:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERTABLE" not found; SQL statement:
+SELECT * FROM usertable WHERE username = ? OR email = ? [42102-224]

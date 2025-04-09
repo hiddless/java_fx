@@ -11,7 +11,8 @@ import javafx.stage.Stage;
 
 import java.time.LocalDateTime;
 
-public class NotebookController {
+public class NoteController {
+
     @FXML
     public TextField titleField;
 
@@ -32,7 +33,7 @@ public class NotebookController {
 
     @FXML
     private void saveNote(ActionEvent event) {
-        System.out.println("Not Başarıyla Kaydedildi");
+        System.out.println("Kaydet butonuna tıklandı!");
 
         createdNote = NotebookDTO.builder()
                 .title(titleField.getText())
@@ -41,7 +42,7 @@ public class NotebookController {
                 .createdDate(LocalDateTime.now())
                 .updatedDate(LocalDateTime.now())
                 .build();
-        System.out.println("Note succesfully saved");
+        System.out.println("Note saved");
         Stage stage = (Stage) titleField.getScene().getWindow();
         stage.close();
     }
@@ -49,8 +50,6 @@ public class NotebookController {
     public NotebookDTO getCreatedNote() {
 
         System.out.println(createdNote.toString());
-        //  setCreatedNote(this.createdNote);
-
         return createdNote;
     }
 

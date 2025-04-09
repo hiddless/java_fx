@@ -1,9 +1,10 @@
 package com.hiddless.java_fx.controller;
+import static com.hiddless.java_fx.utils.SessionManager .currentUser;
 
 import com.hiddless.java_fx.dao.UserDAO;
 import com.hiddless.java_fx.dto.UserDTO;
 import com.hiddless.java_fx.utils.NotificationType;
-import com.hiddless.java_fx.utils.NotificationUtils;
+import com.hiddless.java_fx.utils.NotificationUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -13,10 +14,10 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.sql.SQLException;
 import java.util.Optional;
 
+
 public class ProfileController {
 
     private final UserDAO userDAO = new UserDAO();
-    private UserDTO currentUser;
 
     @FXML
     private PasswordField confirmPasswordField;
@@ -32,9 +33,8 @@ public class ProfileController {
     private Label role;
 
     public void setUser(UserDTO user) {
-        this.currentUser = user;
         System.out.println("ProfileController#setUser gelen user: " + user);
-
+        //  this.currentUser = user;
         Optional<UserDTO> dbUser = getUserProfile(user.getId());
 
         if (dbUser.isPresent()) {
@@ -42,7 +42,6 @@ public class ProfileController {
             username.setText(fresh.getUsername());
             email.setText(fresh.getEmail());
             role.setText(fresh.getRole().toString());
-            this.currentUser = fresh;
         } else {
             username.setText(user.getUsername());
             email.setText(user.getEmail());
@@ -60,31 +59,37 @@ public class ProfileController {
         stage.close();
     }
 
+    //  private UserDTO currentUser;
+
+
     @FXML
-    public void changePassword() {
+    public void changePassword() throws SQLException {
         String newPassword = newPasswordField.getText();
         String confirmPassword = confirmPasswordField.getText();
+        setUser(currentUser);
+        String oldPassword = currentUser.getPassword();
 
         if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
-            NotificationUtils.showNotification("Şifre boş olamaz", NotificationType.WARNING);
+            NotificationUtil.showNotification("Şifre boş olmaz", NotificationType.WARNING);
             return;
         }
-
         if (!newPassword.equals(confirmPassword)) {
-            NotificationUtils.showNotification("Yeni şifreler uyuşmuyor!", NotificationType.WARNING);
+            NotificationUtil.showNotification("\"Yeni şifreler uyuşmuyor!\"", NotificationType.WARNING);
             return;
         }
 
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         currentUser.setPassword(hashedPassword);
+        // currentUser.setPassword(newPassword);
+        System.out.println("Şifre değişti");
+        System.out.println("🟢 Güncellenecek kullanıcı: " + currentUser.getUsername());
+        System.out.println("🟢 Yeni şifre (hash'li): " + hashedPassword);
 
-        try {
-            userDAO.updatePassword(currentUser);
-            NotificationUtils.showNotification("Şifre başarıyla değiştirildi!", NotificationType.SUCCESS);
-            closeWindow();
-        } catch (SQLException e) {
-            NotificationUtils.showNotification("Şifre güncellenemedi!", NotificationType.ERROR);
-            e.printStackTrace();
-        }
+        NotificationUtil.showNotification("Şifre değişti", NotificationType.SUCCESS);
+        userDAO.updatePassword(currentUser);
+
+        closeWindow();
+
+
     }
 }

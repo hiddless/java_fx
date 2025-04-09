@@ -6,7 +6,7 @@ import javafx.scene.control.Alert;
 
 import java.util.List;
 
-public class NotificationUtils {
+public class NotificationUtil {
     private static final NotificationDAO notificationDAO;
 
     static {

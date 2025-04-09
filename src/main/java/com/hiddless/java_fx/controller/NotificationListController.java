@@ -10,6 +10,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 public class NotificationListController {
+
     @FXML
     private TextArea notificationArea;
 
@@ -17,7 +18,7 @@ public class NotificationListController {
         this.notificationArea = notificationArea;
     }
 
-    private final String FILE_PATH = "notifications.txt";
+    private final String FILE_PATH = "notification.txt";
 
     @FXML
     public void initialize() {

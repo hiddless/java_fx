@@ -1,7 +1,6 @@
 package com.hiddless.java_fx.controller;
 import com.hiddless.java_fx.dao.KdvDAO;
 import com.hiddless.java_fx.dto.KdvDTO;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
